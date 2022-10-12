@@ -1,5 +1,5 @@
 image:
-  repository: digicatapult/dscp-node
+  repository: ghcr.io/digicatapult/dscp-node
   tag: latest
   pullPolicy: Always
 
