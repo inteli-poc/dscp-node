@@ -119,7 +119,7 @@ jobs:
         with:
           node-version: '16.x'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@${{ github.event.repository.owner.name }}'
+          scope: '@digicatapult'
       - name: Install packages
         working-directory: api
         run: npm ci
