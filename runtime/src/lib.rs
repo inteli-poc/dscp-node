@@ -7,7 +7,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::{ConstU128, ConstU32, ConstU64, ConstU8, EitherOfDiverse, EqualPrivilegeOnly};
+use frame_support::traits::{ConstU128, ConstU32, ConstU64, EitherOfDiverse, EqualPrivilegeOnly};
 use frame_support::BoundedVec;
 use frame_system::EnsureRoot;
 use pallet_grandpa::fg_primitives;
@@ -34,7 +34,7 @@ pub use frame_support::{
     traits::{ChangeMembers, InitializeMembers, KeyOwnerProofSystem, Randomness},
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-        IdentityFee, Weight
+        DispatchInfo, GetDispatchInfo, IdentityFee, Weight
     },
     StorageValue
 };
@@ -95,7 +95,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dscp"),
     impl_name: create_runtime_str!("dscp"),
     authoring_version: 1,
-    spec_version: 422,
+    spec_version: 431,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -380,8 +380,7 @@ impl pallet_process_validation::Config for Runtime {
     type TokenMetadataKey = TokenMetadataKey;
     type TokenMetadataValue = TokenMetadataValue;
     type TokenMetadataValueDiscriminator = MetadataValueType;
-    type MaxRestrictionDepth = ConstU8<3>;
-    type MaxProcessRestrictions = ConstU32<100>;
+    type MaxProcessProgramLength = ConstU32<200>;
 }
 
 parameter_types! {
@@ -618,6 +617,34 @@ impl_runtime_apis! {
     impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
         fn account_nonce(account: AccountId) -> Index {
             System::account_nonce(account)
+        }
+    }
+
+    // Certain elements of the polkadot UI assume the presence of the payment RPC API
+    // Because we do not have transaction fees we implement the API but returning zero fees
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
+        fn query_info(
+            uxt: <Block as BlockT>::Extrinsic,
+            _len: u32,
+        ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+            let dispatch_info = <<Block as BlockT>::Extrinsic as GetDispatchInfo>::get_dispatch_info(&uxt);
+            let DispatchInfo { weight, class, .. } = dispatch_info;
+
+            pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo {
+                weight,
+                class,
+                partial_fee: 0u32.into()
+            }
+        }
+
+        fn query_fee_details(
+            _uxt: <Block as BlockT>::Extrinsic,
+            _len: u32,
+        ) -> pallet_transaction_payment_rpc_runtime_api::FeeDetails<Balance> {
+            pallet_transaction_payment_rpc_runtime_api::FeeDetails {
+                inclusion_fee: None,
+                tip: 0u32.into()
+            }
         }
     }
 
