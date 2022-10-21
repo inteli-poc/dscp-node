@@ -21,12 +21,6 @@ jobs:
             echo "Must provide a GITHUB_TOKEN secret in order to run release workflow"
             exit 1
           fi
-      - name: Check npmjs token
-        run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}"]; then
-            echo "Must provide a NPM_TOKEN secret in order to run release workflow"
-            exit 1
-          fi
       - name: Get repository identifiers
         id: repo_ids
         run: |
@@ -134,29 +128,3 @@ jobs:
         run: npm publish --access public 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish-npm:
-    name: 'Publish package to NPMJS'
-    needs:
-      - preconditions
-      - lint
-      - dependency-check
-      - check-version
-    runs-on: ubuntu-latest
-    if: ${{ needs.check-version.outputs.is_new_version == 'true' }}
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@digicatapult'
-      - name: Install packages
-        working-directory: api
-        run: npm ci
-      - name: Publish to github packages
-        working-directory: api
-        run: npm publish --access public 
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
